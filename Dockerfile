@@ -1,19 +1,30 @@
 # Dockerfile
 
 # 1. Usamos una imagen oficial que ya tiene Windows Server 2022 Y Node.js 20 instalados de fábrica
-FROM stefanscherer/node:20-windowsservercore-2022
+# =========================================================================
+# ETAPA 1: Usamos la imagen oficial de Node.js solo para extraer sus archivos
+# =========================================================================
+FROM node:20-alpine AS node-source
 
-# 2. Establecemos el directorio de trabajo de la app usando rutas correctas de Windows
+# =========================================================================
+# ETAPA 2: Tu sistema operativo real Windows Server 2022
+# =========================================================================
+FROM ://microsoft.com
+
+# Copiamos la carpeta completa de Node directamente desde la Etapa 1 hacia el disco C: de Windows
+COPY --from=node-source /usr/local/bin/node.exe C:/nodejs/node.exe
+
+# Inyectamos la ruta de Node en las variables de entorno de Windows de forma nativa en Docker
+ENV PATH="C:\nodejs;${PATH}"
+
+# Establecemos el directorio de trabajo para tu código
 WORKDIR C:/app
 
-# 3. Copiamos los archivos de nuestro repositorio (app.js y package.json)
+# Copiamos app.js y package.json
 COPY . .
 
-# 4. Instalamos las dependencias. npm ya viene instalado y configurado en el PATH
-RUN npm install
-
-# 5. Informamos a AWS ECS que la aplicación estará escuchando en el puerto 3000
+# Informamos a AWS ECS sobre el puerto de red
 EXPOSE 3000
 
-# 6. Comando de arranque nativo de Node.js
+# Comando definitivo para iniciar tu API
 CMD ["node", "app.js"]
