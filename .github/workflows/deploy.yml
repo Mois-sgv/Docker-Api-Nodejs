@@ -34,6 +34,29 @@ jobs:
           }
           Write-Output "✅ Estructura DevOps validada con éxito."
 
+      - name: Validar estructura de infraestructura
+        run: |
+          if (-not (Test-Path "infra/task-definition.json")) {
+            Write-Error "❌ ERROR CRÍTICO: No se encuentra el archivo task-definition.json en la carpeta infra/"
+            exit 1
+          }
+          Write-Output "✅ Estructura DevOps validada con éxito."
+
+      # 🚀 NUEVO PASO DEVOPS: Encendemos el motor nativo de Docker en el servidor Windows de GitHub
+      - name: Iniciar Servicio de Docker en Windows
+        run: |
+          Set-Service docker -StartupType Automatic
+          Start-Service docker
+          echo "✅ El demonio de Docker para Windows ha sido iniciado con éxito."
+
+      - name: Iniciar sesion en GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+
       - name: Iniciar sesion en GHCR
         uses: docker/login-action@v3
         with:
