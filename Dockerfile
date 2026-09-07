@@ -1,31 +1,19 @@
 # Dockerfile
-FROM mcr.microsoft.com/windows/servercore:ltsc2022
 
-# Configurar PowerShell estricto
-SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop';"]
+# 1. Usamos una imagen oficial que ya tiene Windows Server 2022 Y Node.js 20 instalados de fábrica
+FROM stefanscherer/node:20-windowsservercore-2022
 
-# 1. Descargamos la versión PORTÁTIL binaria (.zip) de Node.js en lugar del instalador msi
-RUN Invoke-WebRequest -Uri https://nodejs.org -OutFile node.zip
-
-# 2. Descomprimimos el archivo directamente en C:\ y borramos el archivo zip para ahorrar espacio
-RUN Expand-Archive -Path node.zip -DestinationPath C:\ ; \
-    Remove-Item node.zip ; \
-    Rename-Item -Path C:\node-v20.11.0-win-x64 -NewName C:\nodejs
-
-# 3. Inyectamos la ruta de Node de forma permanente en las variables de entorno del contenedor
-ENV PATH="C:\nodejs;${PATH}"
-
-# 4. Establecemos el directorio de trabajo de la app
+# 2. Establecemos el directorio de trabajo de la app usando rutas correctas de Windows
 WORKDIR C:/app
 
-# 5. Copiamos los archivos de nuestro repositorio
+# 3. Copiamos los archivos de nuestro repositorio (app.js y package.json)
 COPY . .
 
-# 6. Al usar la versión portátil y la instrucción ENV, npm se reconoce de inmediato y sin esperas
+# 4. Instalamos las dependencias. npm ya viene instalado y configurado en el PATH
 RUN npm install
 
-# 7. Exponemos el puerto
+# 5. Informamos a AWS ECS que la aplicación estará escuchando en el puerto 3000
 EXPOSE 3000
 
-# 8. Comando de arranque nativo y limpio
+# 6. Comando de arranque nativo de Node.js
 CMD ["node", "app.js"]
