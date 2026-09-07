@@ -12,7 +12,7 @@ RUN Invoke-WebRequest -Uri https://nodejs.org -OutFile node.msi; \
     Remove-Item node.msi
 
 # 4. Creamos el directorio de la aplicación en la unidad de disco C: de Windows y nos movemos allí
-WORKDIR C:\app
+WORKDIR C:/app
 
 # 5. Copiamos todo el código de nuestra API (incluyendo app.js y package.json) hacia la ruta de trabajo
 COPY . .
