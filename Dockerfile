@@ -1,7 +1,7 @@
 # Dockerfile
 
 # 1. Usamos la imagen oficial ligera de Windows Server Core optimizada para contenedores
-FROM ://microsoft.com
+FROM mcr.microsoft.com/windows/servercore:ltsc2022
 
 # 2. Configuramos PowerShell como el intérprete por defecto para la construcción del contenedor
 SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop';"]
