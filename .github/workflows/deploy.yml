@@ -32,11 +32,12 @@ jobs:
        
       - name: Validar estructura de infraestructura
         run: |
-          if [ ! -f "${{ env.ECS_TASK_DEFINITION }}" ]; then
-            echo "❌ ERROR CRÍTICO: No se encuentra el archivo task-definition.json en la carpeta infra/"
+          if (-not (Test-Path "infra/task-definition.json")) {
+            Write-Error "❌ ERROR CRÍTICO: No se encuentra el archivo task-definition.json en la carpeta infra/"
             exit 1
-          fi
-          echo "✅ Estructura DevOps validada con éxito."
+          }
+          Write-Output "✅ Estructura DevOps validada con éxito."
+
 
       - name: Configurar Docker Buildx
         uses: docker/setup-buildx-action@v3
