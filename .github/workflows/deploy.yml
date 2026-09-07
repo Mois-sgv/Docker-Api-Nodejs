@@ -28,9 +28,8 @@ jobs:
     steps:
       - name: Descargar codigo del repositorio
         uses: actions/checkout@v4
-
       # PASO DE CALIDAD DEVOPS: Validamos que los planos de AWS existan en la carpeta correcta antes de compilar
-       chivalry-check:
+       
       - name: Validar estructura de infraestructura
         run: |
           if [ ! -f "${{ env.ECS_TASK_DEFINITION }}" ]; then
