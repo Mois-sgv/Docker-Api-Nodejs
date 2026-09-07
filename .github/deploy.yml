@@ -1,0 +1,84 @@
+# .github/workflows/deploy.yml
+name: CI - Test y Despliegue de API Windows en AWS ECS
+run-name: Deploy Windows App in live by ${{ github.actor }}
+
+on:
+  push:
+    branches: [ main ]
+
+env:
+  REGISTRY: ghcr.io
+  AWS_REGION: eu-north-1
+  ECS_SERVICE: primer-docker-service
+  ECS_CLUSTER: primer-docker-cluster
+  
+  # 🚀 ENFOQUE DEVOPS: Ruta estandarizada hacia la carpeta de infraestructura
+  ECS_TASK_DEFINITION: infra/task-definition.json   
+  
+  CONTAINER_NAME: mi-contenedor-ubuntu 
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-24.04
+    
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Descargar codigo del repositorio
+        uses: actions/checkout@v4
+
+      # PASO DE CALIDAD DEVOPS: Validamos que los planos de AWS existan en la carpeta correcta antes de compilar
+       chivalry-check:
+      - name: Validar estructura de infraestructura
+        run: |
+          if [ ! -f "${{ env.ECS_TASK_DEFINITION }}" ]; then
+            echo "❌ ERROR CRÍTICO: No se encuentra el archivo task-definition.json en la carpeta infra/"
+            exit 1
+          fi
+          echo "✅ Estructura DevOps validada con éxito."
+
+      - name: Configurar Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Iniciar sesion en GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Construir y subir Imagen Docker para Windows
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/mois-sgv/primer-docker:latest
+            ghcr.io/mois-sgv/primer-docker:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Configurar credenciales de AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Actualizar ID de imagen en la definicion de tarea de AWS
+        id: render-task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: ${{ env.ECS_TASK_DEFINITION }}
+          container-name: ${{ env.CONTAINER_NAME }}
+          image: ghcr.io/mois-sgv/primer-docker:${{ github.sha }}
+
+      - name: Desplegar nueva tarea en Amazon ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.render-task-def.outputs.task-definition }}
+          service: ${{ env.ECS_SERVICE }}
+          cluster: ${{ env.ECS_CLUSTER }}
+          wait-for-service-stability: false
