@@ -1,30 +1,28 @@
 # Dockerfile
-
-# 1. Usamos una imagen oficial que ya tiene Windows Server 2022 Y Node.js 20 instalados de fábrica
-# =========================================================================
-# ETAPA 1: Usamos la imagen oficial de Node.js solo para extraer sus archivos
-# =========================================================================
-FROM node:20-alpine AS node-source
-
-# =========================================================================
-# ETAPA 2: Tu sistema operativo real Windows Server 2022
-# =========================================================================
 FROM ://microsoft.com
 
-# Copiamos la carpeta completa de Node directamente desde la Etapa 1 hacia el disco C: de Windows
-COPY --from=node-source /usr/local/bin/node.exe C:/nodejs/node.exe
+# Configurar PowerShell estricto como el intérprete por defecto
+SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop';"]
 
-# Inyectamos la ruta de Node en las variables de entorno de Windows de forma nativa en Docker
-ENV PATH="C:\nodejs;${PATH}"
+# 1. Instalar Chocolatey de forma oficial y nativa en Windows Server
+RUN Set-ExecutionPolicy Bypass -Scope Process -Force; \
+    [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; \
+    iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org'))
 
-# Establecemos el directorio de trabajo para tu código
+# 2. Usar Chocolatey para instalar Node.js (esto configura el PATH automáticamente y no falla jamás)
+RUN choco install nodejs-lts --version=20.11.0 -y --no-progress
+
+# 3. Establecemos el directorio de trabajo de la app en Windows
 WORKDIR C:/app
 
-# Copiamos app.js y package.json
+# 4. Copiamos los archivos de nuestro repositorio (app.js y package.json)
 COPY . .
 
-# Informamos a AWS ECS sobre el puerto de red
+# 5. Instalamos Express (NPM ya es reconocido nativamente por el sistema)
+RUN npm install
+
+# 6. Informamos a AWS ECS sobre el puerto de red
 EXPOSE 3000
 
-# Comando definitivo para iniciar tu API
+# 7. Comando de arranque definitivo
 CMD ["node", "app.js"]

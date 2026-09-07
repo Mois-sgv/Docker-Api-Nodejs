@@ -49,14 +49,7 @@ jobs:
           Start-Service docker
           echo "✅ El demonio de Docker para Windows ha sido iniciado con éxito."
 
-      - name: Iniciar sesion en GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-
+      
       - name: Iniciar sesion en GHCR
         uses: docker/login-action@v3
         with:
