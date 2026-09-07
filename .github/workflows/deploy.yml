@@ -60,7 +60,7 @@ jobs:
       # 🚀 PASO REFORMULADO: Usamos comandos nativos de la consola para construir la imagen de Windows
       - name: Construir Imagen Docker de Windows
         run: |
-          docker build -t ghcr.io/mois-sgv/primer-docker:latest -t ghcr.io/mois-sgv/primer-docker:${{ github.sha }} .
+          docker build --no-cache -t ghcr.io/mois-sgv/primer-docker:latest -t ghcr.io/mois-sgv/primer-docker:${{ github.sha }} .
 
       # 🚀 PASO REFORMULADO: Subimos las imágenes a GitHub Packages por separado
       - name: Subir Imagen Docker a GHCR
