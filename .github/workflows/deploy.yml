@@ -1,0 +1,92 @@
+# .github/workflows/deploy.yml
+name: CI - Test y Despliegue de API Windows en AWS ECS
+run-name: Deploy Windows App in live by ${{ github.actor }}
+
+on:
+  push:
+    branches: [ main ]
+
+env:
+  REGISTRY: ghcr.io
+  AWS_REGION: eu-north-1
+  ECS_SERVICE: primer-docker-service
+  ECS_CLUSTER: primer-docker-cluster
+  ECS_TASK_DEFINITION: infra/task-definition.json   
+  CONTAINER_NAME: mi-contenedor-ubuntu 
+
+jobs:
+  build-and-deploy:
+    runs-on: windows-2022
+    
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Descargar codigo del repositorio
+        uses: actions/checkout@v4
+
+      - name: Validar estructura de infraestructura
+        run: |
+          if (-not (Test-Path "infra/task-definition.json")) {
+            Write-Error "❌ ERROR CRÍTICO: No se encuentra el archivo task-definition.json en la carpeta infra/"
+            exit 1
+          }
+          Write-Output "✅ Estructura DevOps validada con éxito."
+
+      - name: Validar estructura de infraestructura
+        run: |
+          if (-not (Test-Path "infra/task-definition.json")) {
+            Write-Error "❌ ERROR CRÍTICO: No se encuentra el archivo task-definition.json en la carpeta infra/"
+            exit 1
+          }
+          Write-Output "✅ Estructura DevOps validada con éxito."
+
+      # 🚀 NUEVO PASO DEVOPS: Encendemos el motor nativo de Docker en el servidor Windows de GitHub
+      - name: Iniciar Servicio de Docker en Windows
+        run: |
+          Set-Service docker -StartupType Automatic
+          Start-Service docker
+          echo "✅ El demonio de Docker para Windows ha sido iniciado con éxito."
+
+      
+      - name: Iniciar sesion en GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # 🚀 PASO REFORMULADO: Usamos comandos nativos de la consola para construir la imagen de Windows
+      - name: Construir Imagen Docker de Windows
+        run: |
+          docker build --no-cache -t ghcr.io/mois-sgv/primer-docker:latest -t ghcr.io/mois-sgv/primer-docker:${{ github.sha }} .
+
+      # 🚀 PASO REFORMULADO: Subimos las imágenes a GitHub Packages por separado
+      - name: Subir Imagen Docker a GHCR
+        run: |
+          docker push ghcr.io/mois-sgv/primer-docker:latest
+          docker push ghcr.io/mois-sgv/primer-docker:${{ github.sha }}
+
+      - name: Configurar credenciales de AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Actualizar ID de imagen en la definicion de tarea de AWS
+        id: render-task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: ${{ env.ECS_TASK_DEFINITION }}
+          container-name: ${{ env.CONTAINER_NAME }}
+          image: ghcr.io/mois-sgv/primer-docker:${{ github.sha }}
+
+      - name: Desplegar nueva tarea en Amazon ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.render-task-def.outputs.task-definition }}
+          service: ${{ env.ECS_SERVICE }}
+          cluster: ${{ env.ECS_CLUSTER }}
+          wait-for-service-stability: false

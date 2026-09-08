@@ -1,0 +1,43 @@
+{
+  "family": "primer-docker-task",                             // Nombre único que agrupa todas las versiones de este plano en AWS
+  "networkMode": "awsvpc",                                     // Modo de red estándar obligatorio para el uso de Fargate en la nube
+  "executionRoleArn": "arn:aws:iam::294321867399:role/miEcsTaskExecutionRole", // Rol de seguridad que autoriza a ECS a descargar la imagen y escribir logs
+  
+  "runtimePlatform": {                                         // Especifica el entorno de sistema operativo nativo que aprovisionará Fargate
+    "operatingSystemFamily": "WINDOWS_SERVER_2022_CORE",       // Indica a AWS que asigne un servidor Windows Server 2022 Core original
+    "cpuArchitecture": "X86_64"                                // Arquitectura estándar de procesador de 64 bits requerida por Windows
+  },
+
+  "containerDefinitions": [                                    // Lista de contenedores que se encenderán juntos dentro de la tarea
+    {
+      "name": "mi-contenedor-ubuntu",                          // Identificador interno del contenedor (debe coincidir con tu .yml en GitHub)
+      "image": "ghcr.io/mois-sgv/primer-docker:latest",        // Ruta del almacén de GitHub de donde AWS descargará tu imagen compilada
+      "cpu": 1024,                                             // Hardware asignado a este contenedor específico (1024 equivale a 1 vCPU completa)
+      "memory": 2048,                                          // Memoria RAM asignada a este contenedor específico (2048 equivale a 2 GB de RAM)
+      "essential": true,                                       // Si este contenedor se apaga o falla, toda la tarea se detendrá por completo
+      
+      "portMappings": [                                        // Configuración de puertos para abrir las comunicaciones de la aplicación
+        {
+          "containerPort": 3000,                               // Puerto interno en el que tu código de Node.js se queda escuchando
+          "hostPort": 3000,                                    // Puerto externo de la máquina virtual que recibirá el tráfico de internet
+          "protocol": "tcp"                                    // Protocolo de red estándar para transmisiones web estables
+        }
+      ],
+      
+      "logConfiguration": {                                    // Configuración del motor de registro de eventos y auditoría de la aplicación
+        "logDriver": "awslogs",                                // Utiliza el driver oficial para centralizar los textos en Amazon CloudWatch
+        "options": {
+          "awslogs-group": "/ecs/primer-docker",               // Nombre del grupo de CloudWatch donde se guardará tu historial de logs
+          "awslogs-region": "eu-north-1",                      // Región geográfica de AWS (Estocolmo) donde se guardarán los registros
+          "awslogs-stream-prefix": "ecs"                       // Prefijo identificador que se antepondrá a cada flujo de texto individual
+        }
+      }
+    }
+  ],
+  "requiresCompatibilities": [                                 // Tecnologías de infraestructura compatibles para ejecutar este plano
+    "FARGATE"                                                  // Fuerza a AWS a usar su tecnología Serverless sin servidores tradicionales
+  ],
+  
+  "cpu": "1024",                                               // Hardware total reservado a nivel global en Fargate (Mínimo requerido por Windows)
+  "memory": "2048"                                             // Memoria total reservada a nivel global en Fargate (Mínimo requerido por Windows)
+}
