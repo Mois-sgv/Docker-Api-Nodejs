@@ -1,18 +1,14 @@
-# =========================================================================
-# 1. IMAGEN BASE: Usamos el sistema operativo Windows Server 2022 oficial
-# =========================================================================
+# 1. Usamos la imagen oficial de Microsoft que ya viene con Windows Server Y Node.js de fábrica
 FROM ://microsoft.com
 
-# 2. CONFIGURACIÓN: Establecemos PowerShell como el entorno de ejecución por defecto
-SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop';"]
-
-# 3. INSTALACIÓN DE CHOCOLATEY: Descargamos el gestor de paquetes oficial de Windows
-RUN Set-ExecutionPolicy Bypass -Scope Process -Force; \
-    [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; \
-    iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org'))
-
-# 4. INSTALACIÓN DE NODE.JS: Choco instala Node v20 en primer plano y configura el PATH solo
-RUN choco install nodejs-lts --version=20.11.0 -y --no-progress
-
-# 5. DIRECTORIO DE TRABAJO: Creamos la ruta absoluta de la app dentro del disco C:
+# 2. Establecemos la carpeta de la aplicación dentro del contenedor
 WORKDIR C:/app
+
+# 3. Copiamos tus archivos del proyecto (app.js y package.json)
+COPY . .
+
+# 4. Instalamos las dependencias. El comando 'npm' ya funciona de forma nativa e inmediata
+RUN npm install
+
+# 5. Comando definitivo para arrancar tu servidor web de Node.js
+CMD ["node", "app.js"]
