@@ -1,4 +1,4 @@
-json{
+{
   "name": "api-hola-mundo-windows",
   "version": "1.0.0",
   "description": "Mi primera API en Node.js corriendo sobre Windows Containers",
