@@ -2,13 +2,10 @@
 name: CI - Test y Despliegue de API Windows en AWS ECS
 run-name: Deploy Windows App in live by ${{ github.actor }}
 
-permissions:
-  id-token: write # 👈 Obligatorio para que funcione OIDC
-  contents: read  # Permite al robot descargar tu código
-
 on:
   push:
     branches: [ main ]
+
 
 env:
   REGISTRY: ghcr.io
@@ -25,6 +22,7 @@ jobs:
     permissions:
       contents: read
       packages: write
+      id-token: write
 
     steps:
       - name: Descargar codigo del repositorio
