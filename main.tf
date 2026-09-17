@@ -106,15 +106,15 @@ output "arn_del_rol_para_github" {
   description = "Copia este código y ponlo en tu archivo del workflow de GitHub"
 }
 # 10. Le pedimos a Terraform que busque los datos de red del servicio en tiempo real
-data "aws_network_interface" "ip_contenedor" {
-  filter {
-    name   = "description"
-    values = ["AWS Fargate task*"]
-  }
-}
+#data "aws_network_interface" "ip_contenedor" {
+ # filter {
+ #   name   = "description"
+ #   values = ["AWS Fargate task*"]
+#  }
+#}
 
 # 11. Imprime la dirección IP pública directamente en la terminal
-output "url_publica_de_mi_app" {
-  value       = "http://${data.aws_network_interface.ip_contenedor.association[0].public_ip}:3000"
-  description = "Copia y pega este enlace en tu navegador para ver tu Hola Mundo"
-}
+#output "url_publica_de_mi_app" {
+#  value       = "http://${data.aws_network_interface.ip_contenedor.association[0].public_ip}:3000"
+#  description = "Copia y pega este enlace en tu navegador para ver tu Hola Mundo"
+#}
