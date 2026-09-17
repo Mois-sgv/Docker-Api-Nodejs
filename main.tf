@@ -70,7 +70,7 @@ resource "aws_iam_openid_connect_provider" "github" {
   ] 
 }
 
-# 7. Crear el Rol de Seguridad con la política "Allow" corregida
+# 7. Crear el Rol de Seguridad Flexible para tu Repositorio - Corregido Casing
 resource "aws_iam_role" "rol_github_actions" {
   name = "github-actions-ecs-deploy-role"
 
@@ -79,14 +79,14 @@ resource "aws_iam_role" "rol_github_actions" {
     Statement = [
       {
         Action = "sts:AssumeRoleWithWebIdentity"
-        Effect = "Allow" # 👈 Corregido a "Allow" obligatorio
+        Effect = "Allow"
         Principal = {
           Federated = aws_iam_openid_connect_provider.github.arn
         }
         Condition = {
           StringLike = {
-            # Evitamos fallos estrictos de mayúsculas o nombre de rama usando un comodín
-            "token.actions.githubusercontent.com:sub" = "repo:Mois-sgv/Docker-Api-Nodejs:*"
+            # 👇 Usamos un asterisco al final y al principio para ignorar mayúsculas y nombres de ramas
+            "token.actions.githubusercontent.com:sub" = "repo:*Docker-Api-Nodejs:*"
           }
           StringEquals = {
             "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
@@ -96,6 +96,7 @@ resource "aws_iam_role" "rol_github_actions" {
     ]
   })
 }
+
 
 # 8. Darle permisos de Administrador a este rol para que pueda actualizar ECS
 resource "aws_iam_role_policy_attachment" "github_admin" {
