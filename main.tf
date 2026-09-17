@@ -17,7 +17,7 @@ data "aws_subnets" "default" {
 
 # 3. Creamos el Clúster de ECS con el nombre exacto de tu GitHub
 resource "aws_ecs_cluster" "cluster_windows" {
-  name = "primer-docker-cluster"
+  name = "primer-docker-windows-cluster"
 }
 
 # 4. Definimos el plano del contenedor de Windows
@@ -56,4 +56,46 @@ resource "aws_ecs_service" "servicio_windows" {
     subnets          = data.aws_subnets.default.ids # Usa las subredes automáticas que buscamos arriba
     assign_public_ip = true
   }
+}
+# 6. Crear el conector de confianza con GitHub (OIDC)
+resource "aws_iam_openid_connect_provider" "github" {
+  url             = "https://githubusercontent.com"
+  client_id_list  = ["://amazonaws.com"]
+  thumbprint_list = ["1c58a3a8518e8759bf075b76b750d4f2df264fcd"] # Certificado oficial de GitHub
+}
+
+# 7. Crear el Rol de Seguridad que usará tu robot
+resource "aws_iam_role" "rol_github_actions" {
+  name = "github-actions-ecs-deploy-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRoleWithWebIdentity"
+        Effect = "Allow"
+        Principal = {
+          Federated = aws_iam_openid_connect_provider.github.arn
+        }
+        Condition = {
+          StringEquals = {
+            "://githubusercontent.com:sub" = "repo:Mois-sgv/Docker-Api-Nodejs:ref:refs/heads/main"
+            "://githubusercontent.com:aud" = "://amazonaws.com"
+          }
+        }
+      }
+    ]
+  })
+}
+
+# 8. Darle permisos de Administrador a este rol para que pueda actualizar ECS
+resource "aws_iam_role_policy_attachment" "github_admin" {
+  role       = aws_iam_role.rol_github_actions.name
+  policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
+}
+
+# 9. Imprimir en pantalla el código del Rol cuando termine
+output "arn_del_rol_para_github" {
+  value       = aws_iam_role.rol_github_actions.arn
+  description = "Copia este código y ponlo en tu archivo del workflow de GitHub"
 }

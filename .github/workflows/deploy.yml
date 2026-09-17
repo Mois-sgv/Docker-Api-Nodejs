@@ -2,6 +2,10 @@
 name: CI - Test y Despliegue de API Windows en AWS ECS
 run-name: Deploy Windows App in live by ${{ github.actor }}
 
+permissions:
+  id-token: write # 👈 Obligatorio para que funcione OIDC
+  contents: read  # Permite al robot descargar tu código
+
 on:
   push:
     branches: [ main ]
@@ -10,7 +14,7 @@ env:
   REGISTRY: ghcr.io
   AWS_REGION: eu-north-1
   ECS_SERVICE: primer-docker-service
-  ECS_CLUSTER: primer-docker-cluster
+  ECS_CLUSTER: primer-docker-windows-cluster
   ECS_TASK_DEFINITION: infra/task-definition.json   
   CONTAINER_NAME: mi-contenedor-ubuntu 
 
@@ -68,14 +72,17 @@ jobs:
           docker push ghcr.io/mois-sgv/primer-docker:latest
           docker push ghcr.io/mois-sgv/primer-docker:${{ github.sha }}
 
-      - name: Configurar credenciales de AWS mediante OIDC
+      - name: Configurar credenciales de AWS
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          # 👇 Usamos el rol dinámico en lugar de las llaves fijas
+          # 1. 🔐 Le indicamos al robot el rol dinámico guardado en tus secretos
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          
+          # 2. 🌍 La región que lee de tus variables de entorno
           aws-region: ${{ env.AWS_REGION }}
-          audience: ://amazonaws.com
-
+          
+          # 3. 🎯 Corregimos el texto para que diga la palabra completa
+          audience: sts.amazonaws.com
 
       - name: Actualizar ID de imagen en la definicion de tarea de AWS
         id: render-task-def
