@@ -1,0 +1,11 @@
+# Archivos de configuración local de Terraform
+.terraform/
+.terraform.lock.hcl
+
+# El archivo de estado (contiene datos reales de tu AWS)
+terraform.tfstate
+terraform.tfstate.backup
+
+# Variables locales que contengan contraseñas
+*.tfvars
+*.tfvars.json
