@@ -70,7 +70,7 @@ resource "aws_iam_openid_connect_provider" "github" {
   ] 
 }
 
-# 7. Crear el Rol de Seguridad Flexible para tu Repositorio - Corregido Casing
+# 7. Crear el Rol de Seguridad Flexible a prueba de cambios OIDC (GitHub 2026)
 resource "aws_iam_role" "rol_github_actions" {
   name = "github-actions-ecs-deploy-role"
 
@@ -85,8 +85,8 @@ resource "aws_iam_role" "rol_github_actions" {
         }
         Condition = {
           StringLike = {
-            # 👇 Usamos un asterisco al final y al principio para ignorar mayúsculas y nombres de ramas
-            "token.actions.githubusercontent.com:sub" = "repo:*Docker-Api-Nodejs:*"
+            # 🎯 El truco definitivo: Ponemos asteriscos alrededor para saltar los IDs numéricos mutables
+            "token.actions.githubusercontent.com:sub" = "*Docker-Api-Nodejs*"
           }
           StringEquals = {
             "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
@@ -96,7 +96,6 @@ resource "aws_iam_role" "rol_github_actions" {
     ]
   })
 }
-
 
 # 8. Darle permisos de Administrador a este rol para que pueda actualizar ECS
 resource "aws_iam_role_policy_attachment" "github_admin" {
