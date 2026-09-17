@@ -68,12 +68,14 @@ jobs:
           docker push ghcr.io/mois-sgv/primer-docker:latest
           docker push ghcr.io/mois-sgv/primer-docker:${{ github.sha }}
 
-      - name: Configurar credenciales de AWS
+      - name: Configurar credenciales de AWS mediante OIDC
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          # 👇 Usamos el rol dinámico en lugar de las llaves fijas
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ env.AWS_REGION }}
+          audience: ://amazonaws.com
+
 
       - name: Actualizar ID de imagen en la definicion de tarea de AWS
         id: render-task-def
