@@ -57,20 +57,14 @@ resource "aws_ecs_service" "servicio_windows" {
     assign_public_ip = true
   }
 }
-# 6. Crear el conector de confianza oficial con GitHub (OIDC) - REPARADO
+# 6. Crear el conector de confianza oficial con GitHub (OIDC) - Limpio
 resource "aws_iam_openid_connect_provider" "github" {
-  url             = "https://token.actions.githubusercontent.com"
+  url             = "https://githubusercontent.com"
   client_id_list  = ["sts.amazonaws.com"]
-  
-  # Certificados raíz estables e intermedios de GitHub Actions
-  thumbprint_list = [
-    "69ac29567e7d38440049730c4598a235311c0227", 
-    "1c58a3a8518e8759bf075b76b750d4f2df264fcd",
-    "6938fd4d98bab03faadb97b34396831e3780aea1"
-  ] 
+  thumbprint_list = ["1c58a3a8518e8759bf075b76b750d4f2df264fcd", "69ac29567e7d38440049730c4598a235311c0227"] 
 }
 
-# 7. Crear el Rol de Seguridad Flexible a prueba de cambios OIDC (GitHub 2026)
+# 7. Crear el Rol de Seguridad con coincidencia exacta (Case-Sensitive)
 resource "aws_iam_role" "rol_github_actions" {
   name = "github-actions-ecs-deploy-role"
 
@@ -84,12 +78,13 @@ resource "aws_iam_role" "rol_github_actions" {
           Federated = aws_iam_openid_connect_provider.github.arn
         }
         Condition = {
-          StringLike = {
-            # 🎯 El truco definitivo: Ponemos asteriscos alrededor para saltar los IDs numéricos mutables
-            "token.actions.githubusercontent.com:sub" = "*Docker-Api-Nodejs*"
-          }
           StringEquals = {
+            # 🎯 El aud debe apuntar de forma estricta a la URL de STS
             "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
+          }
+          StringLike = {
+            # 🎯 Filtro oficial: Coincide con tu usuario y repositorio exactos sin importar la rama
+            "token.actions.githubusercontent.com:sub" = "repo:Mois-sgv/Docker-Api-Nodejs:*"
           }
         }
       }
