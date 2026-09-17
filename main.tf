@@ -61,7 +61,10 @@ resource "aws_ecs_service" "servicio_windows" {
 resource "aws_iam_openid_connect_provider" "github" {
   url             = "https://githubusercontent.com"
   client_id_list  = ["://amazonaws.com"]
-  thumbprint_list = ["69ac29567e7d38440049730c4598a235311c0227", "1c58a3a8518e8759bf075b76b750d4f2df264fcd"] 
+  thumbprint_list = [
+    "69ac29567e7d38440049730c4598a235311c0227", 
+    "1c58a3a8518e8759bf075b76b750d4f2df264fcd",
+    "15e29108718111e59b3ded3195507ae2931ec6d4"] 
 }
 
 # 7. Crear el Rol de Seguridad Flexible para tu Repositorio
@@ -101,4 +104,17 @@ resource "aws_iam_role_policy_attachment" "github_admin" {
 output "arn_del_rol_para_github" {
   value       = aws_iam_role.rol_github_actions.arn
   description = "Copia este código y ponlo en tu archivo del workflow de GitHub"
+}
+# 10. Le pedimos a Terraform que busque los datos de red del servicio en tiempo real
+data "aws_network_interface" "ip_contenedor" {
+  filter {
+    name   = "description"
+    values = ["AWS Fargate task*"]
+  }
+}
+
+# 11. Imprime la dirección IP pública directamente en la terminal
+output "url_publica_de_mi_app" {
+  value       = "http://${data.aws_network_interface.ip_contenedor.association[0].public_ip}:3000"
+  description = "Copia y pega este enlace en tu navegador para ver tu Hola Mundo"
 }
