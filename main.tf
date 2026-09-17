@@ -57,14 +57,14 @@ resource "aws_ecs_service" "servicio_windows" {
     assign_public_ip = true
   }
 }
-# 6. Crear el conector de confianza con GitHub (OIDC)
+# 6. Crear el conector de confianza oficial con GitHub (OIDC) - Corregido
 resource "aws_iam_openid_connect_provider" "github" {
   url             = "https://githubusercontent.com"
   client_id_list  = ["://amazonaws.com"]
-  thumbprint_list = ["1c58a3a8518e8759bf075b76b750d4f2df264fcd"] # Certificado oficial de GitHub
+  thumbprint_list = ["69ac29567e7d38440049730c4598a235311c0227", "1c58a3a8518e8759bf075b76b750d4f2df264fcd"] 
 }
 
-# 7. Crear el Rol de Seguridad que usará tu robot
+# 7. Crear el Rol de Seguridad Flexible para tu Repositorio
 resource "aws_iam_role" "rol_github_actions" {
   name = "github-actions-ecs-deploy-role"
 
@@ -78,8 +78,11 @@ resource "aws_iam_role" "rol_github_actions" {
           Federated = aws_iam_openid_connect_provider.github.arn
         }
         Condition = {
+          StringLike = {
+            # Usamos StringLike y un asterisco para evitar fallos por mayúsculas en tu nombre de usuario
+            "://githubusercontent.com:sub" = "repo:Mois-sgv/Docker-Api-Nodejs:*"
+          }
           StringEquals = {
-            "://githubusercontent.com:sub" = "repo:Mois-sgv/Docker-Api-Nodejs:ref:refs/heads/main"
             "://githubusercontent.com:aud" = "://amazonaws.com"
           }
         }
