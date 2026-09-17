@@ -57,17 +57,20 @@ resource "aws_ecs_service" "servicio_windows" {
     assign_public_ip = true
   }
 }
-# 6. Crear el conector de confianza oficial con GitHub (OIDC) - Corregido
+# 6. Crear el conector de confianza oficial con GitHub (OIDC) - REPARADO
 resource "aws_iam_openid_connect_provider" "github" {
-  url             = "https://githubusercontent.com"
-  client_id_list  = ["://amazonaws.com"]
+  url             = "https://token.actions.githubusercontent.com"
+  client_id_list  = ["sts.amazonaws.com"]
+  
+  # Certificados raíz estables e intermedios de GitHub Actions
   thumbprint_list = [
     "69ac29567e7d38440049730c4598a235311c0227", 
     "1c58a3a8518e8759bf075b76b750d4f2df264fcd",
-    "15e29108718111e59b3ded3195507ae2931ec6d4"] 
+    "6938fd4d98bab03faadb97b34396831e3780aea1"
+  ] 
 }
 
-# 7. Crear el Rol de Seguridad Flexible para tu Repositorio
+# 7. Crear el Rol de Seguridad con la política "Allow" corregida
 resource "aws_iam_role" "rol_github_actions" {
   name = "github-actions-ecs-deploy-role"
 
@@ -76,17 +79,17 @@ resource "aws_iam_role" "rol_github_actions" {
     Statement = [
       {
         Action = "sts:AssumeRoleWithWebIdentity"
-        Effect = "Allow"
+        Effect = "Allow" # 👈 Corregido a "Allow" obligatorio
         Principal = {
           Federated = aws_iam_openid_connect_provider.github.arn
         }
         Condition = {
           StringLike = {
-            # Usamos StringLike y un asterisco para evitar fallos por mayúsculas en tu nombre de usuario
-            "://githubusercontent.com:sub" = "repo:Mois-sgv/Docker-Api-Nodejs:*"
+            # Evitamos fallos estrictos de mayúsculas o nombre de rama usando un comodín
+            "token.actions.githubusercontent.com:sub" = "repo:Mois-sgv/Docker-Api-Nodejs:*"
           }
           StringEquals = {
-            "://githubusercontent.com:aud" = "://amazonaws.com"
+            "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
           }
         }
       }
@@ -105,6 +108,7 @@ output "arn_del_rol_para_github" {
   value       = aws_iam_role.rol_github_actions.arn
   description = "Copia este código y ponlo en tu archivo del workflow de GitHub"
 }
+
 # 10. Le pedimos a Terraform que busque los datos de red del servicio en tiempo real
 #data "aws_network_interface" "ip_contenedor" {
  # filter {
